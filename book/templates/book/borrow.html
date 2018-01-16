@@ -1,0 +1,95 @@
+{% extends "content_base.html" %}
+{% load common_filter %}
+
+{% block content-panel %}
+<div class="xui-suggestionPage">
+	<ul class="breadcrumb">
+		<li>您当前所在位置</li>
+		<li><a href="/book/books/">图书</a></li>
+		<li class="active">借阅图书</li>
+	</ul>
+	
+	<form 
+		class="form-horizontal mt15 {% if book %}xui-updateForm{% endif %}"
+		method="post" 
+		id="editForm" 
+	>
+		<fieldset >
+			<legend class="pl15 pb5 pt5">
+				借阅图书
+			</legend>
+			<div class="form-group clearfix">
+				<label class="control-label col-sm-2" for="bookname">书名</label>
+				<div class="col-sm-4">
+					<input type="text" name="bookname" class="form-control ml5" disabled="disabled" value="{{bookname}}"/>
+				</div>
+			</div>
+			<div class="form-group clearfix">
+				<label class="control-label col-sm-2" for="username">借阅人</label>
+				<div class="col-sm-4">
+					<input type="text" name="username" class="form-control ml5" data-validate="require-notempty"/>
+                    <div class="errorHint ml5" data-error-hint="请输入借阅人姓名"></div>
+				</div>
+			</div>
+
+			<div class="form-group clearfix">
+				<label class="control-label col-sm-2" for="borrow_date">借阅日期</label>
+				<div class="col-sm-4">
+					<input type="text" name="borrow_date" class="form-control ml5" data-validate="require-date" value="{{borrow_date}}"/>
+                    <div class="errorHint ml5" data-error-hint="输入格式为yyyy-mm-dd的日期，如：2018-01-01"></div>
+				</div>
+			</div>
+
+		</fieldset>
+		
+		<div class="mt20 tc">
+			<a class="btn btn-primary mr40 xa-submit xui-fontBold" href="javascript:void(0);">确 定</a>
+		</div>
+	</form>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script type="text/javascript">
+	var inUpdateMode = {% if book %}true{% else %}false{% endif %};
+	var objectId = "{{id}}";
+
+	$(document).ready(function() {
+		$('.xa-tabs a').click(function (e) {
+			e.preventDefault()
+			$(this).tab('show')
+		})
+
+		$('.xa-submit').click(function() {
+			if (!W.validate()) {
+				return;
+			}
+			$(this).attr('disabled', 'true');
+
+			var $form = $('form');
+			var data = $form.serializeObject();
+            data['id'] = objectId;
+
+			W.getApi().call({
+				app: 'book',
+				resource: 'borrow',
+				method: 'put',
+				args: data,
+				success: function(data) {
+					W.showHint('success', '借阅成功');
+					_.delay(function() {
+						window.location.href = '/book/borrow_records/';
+					}, 500);
+				},
+				error: function(resp) {
+					W.showHint('error', resp.errMsg);
+				}
+			});
+		});
+	});
+
+
+</script>
+{% endblock %}
+

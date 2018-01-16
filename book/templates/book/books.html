@@ -1,0 +1,194 @@
+{% extends "content_base.html" %}
+
+{% block content-panel %}
+<div class="xui-totalSuggestionsPage">
+	<div class="xui-searchPanel xa-searchPanel mt15 form-horizontal panel panel-default">
+		<fieldset class="mt10">
+
+			<div class="xui-form-row mt10">
+				
+				<div class="xui-form-item clearfix">
+					<label class="control-label fl" for="nickname">书名</label>
+					<div class="fl">
+						<input 
+							type="text" 
+							class="form-control w150 ml5" 
+							id="name" 
+							name="name"
+						/>
+					</div>
+
+                    <label class="control-label fl" for="author">作者</label>
+					<div class="fl">
+						<input
+							type="text"
+							class="form-control w150 ml5"
+							id="author"
+							name="author"
+						/>
+					</div>
+
+                    <label class="control-label fl" for="publisher">出版社</label>
+					<div class="fl">
+						<input
+							type="text"
+							class="form-control w150 ml5"
+							id="publisher"
+							name="publisher"
+						/>
+					</div>
+
+                    <label class="control-label fl" for="status">状态</label>
+					<div class="fl">
+						<select class="form-control ml5" name="status">
+							<option value="0">全部</option>
+							<option value="1">可借阅</option>
+							<option value="-1">已借完</option>
+						</select>
+					</div>
+
+					<div class="fl ml10">
+						<a href="javascript:void(0);" class="btn btn-primary xa-search">查询</a>
+					</div>
+				</div>
+			</div>
+		</fieldset>
+	</div>
+
+	
+	<div class="panel panel-default xui-panel-table pl15 pr15 mt15">
+        {% if is_admin %}
+		<div class="panel-header clearfix">
+            <a href="/book/book/" target="_blank" class="btn btn-primary">
+				<span class="glyphicon glyphicon-plus"></span> 添加新书
+			</a>
+			<a href="/book/borrow_records/" target="_blank" class="btn btn-success">
+				<span class="glyphicon glyphicon-user"></span> 借阅记录
+			</a>
+		</div>
+        {% endif %}
+		<div 
+			class="panel-body panel-table p0 mt5 pt10"
+			data-ui-role="advanced-table" 
+			data-app="book"
+			data-resource="books"
+			data-template-id="#table" 
+			data-enable-paginator="true" 
+			data-enable-sort="false" 
+			data-selectable="false" 
+			data-disable-header-select="true" 
+			data-item-count-per-page="50"
+			data-auto-load="false"
+		>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+{% verbatim %}
+<script id="table" type="text/x-jquery-tmpl">
+	{{if items!='' }}
+	<table class="table table-bordered mb10 mt10 xui-i-table">
+		<thead>
+			<tr>
+				<th>编号</th>
+				<th>书名</th>
+				<th>作者</th>
+				<th>出版社</th>
+				<th>库存</th>
+				{{if data.is_admin}}
+				<th>操作</th>
+				{{/if}}
+			</tr>
+		</thead>
+		<tbody>
+			{{each(i, book) items}}
+			<tr data-id="${book.id}" class="{{if book.stock == 0}}xui-color-mark{{/if}}">
+				<td>${book.id}</td>
+				<td>${book.name}</td>
+				<td>${book.author}</td>
+				<td>${book.publisher}</td>
+				<td>${book.stock}</td>
+				{{if data.is_admin}}
+				<td>
+				    {{if book.stock > 0}}
+					<a target="_blank" href="/book/borrow/?id=${book.id}" class="btn btn-success btn-xs">借阅</a>
+                    {{/if}}
+					<a target="_blank" href="/book/book/?id=${book.id}" class="btn btn-warning btn-xs">编辑</a>
+					<a href="javascript:void(0);" class="btn btn-danger btn-xs xa-delete">删除</a>
+				</td>
+				{{/if}}
+			</tr>
+			{{/each}}
+		</tbody>
+	</table>
+	{{else}}
+		<div class="xui-emptyBox mt10" style="border:solid 1px #ddd;">
+			<span class="ml20">目前还没有图书</span>
+		</div>
+	{{/if}}
+	<br>
+</script>
+{% endverbatim %}
+
+<script type="text/javascript">
+
+$(document).ready(function() {
+	$('.xa-search').click(function(event) {
+		var name = $.trim($('[name="name"]').val());
+		var author = $.trim($('[name="author"]').val());
+		var publisher = $.trim($('[name="publisher"]').val());
+		var status = $.trim($('[name="status"]').val());
+
+		var table = $('[data-ui-role="advanced-table"]').data('view');
+		table.reload({
+			name: name,
+			author: author,
+			publisher: publisher,
+			status: status
+		}, {
+			emptyDataHint: '没有符合条件的数据'
+		});
+	});
+
+	$('body').delegate('.xa-delete', 'click', function (event) {
+		event.stopPropagation();
+		event.preventDefault();
+		var $link = $(event.target);
+		var $tr = $link.parents('tr');
+		var id = $tr.data('id');
+
+		var deleteData = function() {
+			W.getApi().call({
+				app: 'book',
+				resource: 'book',
+				method: 'delete',
+				args: {
+					id: id
+				},
+				success: function(data) {
+					W.showHint('success', '删除成功!');
+					var table = $('[data-ui-role="advanced-table"]').data('view');
+					table.reload();
+				},
+				error: function(resp) {
+					W.showHint('error', '删除失败!');
+				}
+			})
+		}
+
+		W.requireConfirm({
+			$el: $link,
+			show_icon: false,
+			position:'top',
+			isTitle: false,
+			msg: '确认删除该数据？',
+			confirm: deleteData
+		});
+	});
+});
+</script>
+{% endblock %}
+

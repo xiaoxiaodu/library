@@ -1,0 +1,169 @@
+{% extends "content_base.html" %}
+
+{% block content-panel %}
+<div class="xui-totalSuggestionsPage">
+	<div class="xui-searchPanel xa-searchPanel mt15 form-horizontal panel panel-default">
+		<fieldset class="mt10">
+
+			<div class="xui-form-row mt10">
+				
+				<div class="xui-form-item clearfix">
+					<label class="control-label fl" for="bookname">书名</label>
+					<div class="fl">
+						<input 
+							type="text" 
+							class="form-control w150 ml5" 
+							id="bookname"
+							name="bookname"
+						/>
+					</div>
+
+                    <label class="control-label fl" for="username">借阅人</label>
+					<div class="fl">
+						<input
+							type="text"
+							class="form-control w150 ml5"
+							id="username"
+							name="username"
+						/>
+					</div>
+
+                    <label class="control-label fl" for="status">状态</label>
+					<div class="fl">
+						<select class="form-control ml5" name="status">
+							<option value="0">全部</option>
+							<option value="1">出借中</option>
+							<option value="-1">已归还</option>
+						</select>
+					</div>
+
+					<div class="fl ml10">
+						<a href="javascript:void(0);" class="btn btn-primary xa-search">查询</a>
+					</div>
+				</div>
+			</div>
+		</fieldset>
+	</div>
+
+	
+	<div class="panel panel-default xui-panel-table pl15 pr15 mt15">
+		<div 
+			class="panel-body panel-table p0 mt5 pt10"
+			data-ui-role="advanced-table" 
+			data-app="book"
+			data-resource="borrow_records"
+			data-template-id="#table" 
+			data-enable-paginator="true" 
+			data-enable-sort="false" 
+			data-selectable="false" 
+			data-disable-header-select="true" 
+			data-item-count-per-page="50"
+			data-auto-load="false"
+		>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+{% verbatim %}
+<script id="table" type="text/x-jquery-tmpl">
+	{{if items!='' }}
+	<table class="table table-bordered mb10 mt10 xui-i-table">
+		<thead>
+			<tr>
+				<th>#</th>
+				<th>书名</th>
+				<th>借阅人</th>
+				<th>借阅日期</th>
+				<th>归还日期</th>
+				<th>状态</th>
+				<th>操作</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{each(i, borrow_record) items}}
+			<tr data-id="${borrow_record.id}" class="{{if borrow_record.is_returned}}xui-color-mark{{/if}}">
+				<td>${i + 1}</td>
+				<td>${borrow_record.bookname}</td>
+				<td>${borrow_record.username}</td>
+				<td>${borrow_record.borrow_date}</td>
+				<td>${borrow_record.return_date}</td>
+				<td>${borrow_record.status}</td>
+				<td>
+				    {{if borrow_record.is_returned}}
+				    {{else}}
+					<a target="_blank" href="javascript:void(0);" class="btn btn-success btn-xs xa-return">归还</a>
+					{{/if}}
+				</td>
+			</tr>
+			{{/each}}
+		</tbody>
+	</table>
+	{{else}}
+		<div class="xui-emptyBox mt10" style="border:solid 1px #ddd;">
+			<span class="ml20">目前还没有借阅记录</span>
+		</div>
+	{{/if}}
+	<br>
+</script>
+{% endverbatim %}
+
+<script type="text/javascript">
+
+$(document).ready(function() {
+	$('.xa-search').click(function(event) {
+		var username = $.trim($('[name="username"]').val());
+		var bookname = $.trim($('[name="bookname"]').val());
+		var status = $.trim($('[name="status"]').val());
+
+		var table = $('[data-ui-role="advanced-table"]').data('view');
+		table.reload({
+			username: username,
+			bookname: bookname,
+			status: status
+		}, {
+			emptyDataHint: '没有符合条件的数据'
+		});
+	});
+
+	$('body').delegate('.xa-return', 'click', function (event) {
+		event.stopPropagation();
+		event.preventDefault();
+		var $link = $(event.target);
+		var $tr = $link.parents('tr');
+		var id = $tr.data('id');
+
+		var returnBook = function() {
+			W.getApi().call({
+				app: 'book',
+				resource: 'borrow',
+				method: 'post',
+				args: {
+					borrow_id: id
+				},
+				success: function(data) {
+					W.showHint('success', '归还成功!');
+					var table = $('[data-ui-role="advanced-table"]').data('view');
+					table.reload();
+				},
+				error: function(resp) {
+					W.showHint('error', '归还失败!');
+				}
+			})
+		}
+
+		W.requireConfirm({
+			$el: $link,
+			show_icon: false,
+			position:'top',
+			isTitle: false,
+			msg: '确认归还？',
+			confirm: returnBook
+		});
+	});
+});
+</script>
+{% endblock %}
+
